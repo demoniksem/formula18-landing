@@ -1528,10 +1528,24 @@
     </div>
 
     <script>
-        // Update hidden discount field when a discount is selected
-        document.querySelectorAll('.discount-radio').forEach(function(radio) {
-            radio.addEventListener('change', function() {
-                document.getElementById('selectedDiscount').value = this.value;
+        // Handle discount selection with toggle behavior
+        document.querySelectorAll('.discount-card').forEach(function(card) {
+            card.addEventListener('click', function(e) {
+                // Prevent toggle if clicking on a link inside the card
+                if (e.target.tagName === 'A') return;
+
+                var radio = this.querySelector('.discount-radio');
+                var hiddenField = document.getElementById('selectedDiscount');
+
+                if (radio.checked) {
+                    // If already selected, deselect on second click
+                    radio.checked = false;
+                    hiddenField.value = '';
+                } else {
+                    // Select this discount
+                    radio.checked = true;
+                    hiddenField.value = radio.value;
+                }
             });
         });
 
