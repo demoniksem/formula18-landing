@@ -820,23 +820,60 @@
             border-color: rgba(255, 77, 0, 0.3);
         }
 
-        .discount-card.featured {
-            border-color: var(--primary);
-            box-shadow: 0 0 50px rgba(255, 40, 0, 0.2);
-        }
-        .discount-card.featured::before {
-            content: '';
+        .discount-radio {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--accent), var(--racing-green));
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .discount-card.featured::before {
-            content: 'Популярно';
+        .discount-select-indicator {
             position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 28px;
+            height: 28px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .discount-select-indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        input.discount-radio:checked + .discount-select-indicator {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(255, 40, 0, 0.4);
+        }
+
+        input.discount-radio:checked + .discount-select-indicator::after {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        input.discount-radio:checked ~ .discount-icon,
+        input.discount-radio:checked ~ .discount-title,
+        input.discount-radio:checked ~ .discount-amount,
+        input.discount-radio:checked ~ .discount-desc {
+            opacity: 1;
+        }
+
+        label.discount-card:has(input:checked) {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(255, 40, 0, 0.2), inset 0 0 20px rgba(255, 40, 0, 0.05);
+        }
+
+        label.discount-card:hover {
+            cursor: pointer;
+        }
             top: 16px;
             right: 16px;
             background: var(--primary);
@@ -1375,24 +1412,30 @@
             </div>
 
             <div class="discounts-grid">
-                <div class="discount-card">
+                <label class="discount-card">
+                    <input type="radio" name="discount" value="student" class="discount-radio">
+                    <div class="discount-select-indicator"></div>
                     <div class="discount-icon">👨‍🎓</div>
                     <h3 class="discount-title">Скидка для студентов</h3>
                     <div class="discount-amount">−2 000 ₽</div>
                     <p class="discount-desc">Для школьников и студентов очной формы обучения. Предъявите студенческий или справку из школы.</p>
-                </div>
-                <div class="discount-card">
+                </label>
+                <label class="discount-card">
+                    <input type="radio" name="discount" value="birthday" class="discount-radio">
+                    <div class="discount-select-indicator"></div>
                     <div class="discount-icon">🎂</div>
                     <h3 class="discount-title">Скидка на День Рождения</h3>
                     <div class="discount-amount">−3 000 ₽</div>
                     <p class="discount-desc">Празднуйте день рождения вместе с нами! Скидка действует в день рождения и неделю до/после.</p>
-                </div>
-                <div class="discount-card">
+                </label>
+                <label class="discount-card">
+                    <input type="radio" name="discount" value="friend" class="discount-radio">
+                    <div class="discount-select-indicator"></div>
                     <div class="discount-icon">👥</div>
                     <h3 class="discount-title">Приведи друга</h3>
                     <div class="discount-amount">−2 000 ₽</div>
-                    <p class="discount-desc">Порекомендуйте автошколу другу и оба получите скидку. Выгодно вместе!</p>
-                </div>
+                    <p class="discount-desc">Порекомендуйте автошколу другу и оба получат скидку. Выгодно вместе!</p>
+                </label>
             </div>
 
             <p style="text-align: center; margin-top: 32px; font-size: 14px; color: var(--text-muted);">
@@ -1440,15 +1483,15 @@
                     <form id="contactForm">
                         <div class="form-group">
                             <label>Ваше имя</label>
-                            <input type="text" placeholder="Как вас зовут?" required>
+                            <input type="text" name="name" placeholder="Как вас зовут?" required>
                         </div>
                         <div class="form-group">
                             <label>Телефон</label>
-                            <input type="tel" placeholder="+7 (___) ___-__-__" required>
+                            <input type="tel" name="phone" placeholder="+7 (___) ___-__-__" required>
                         </div>
                         <div class="form-group">
                             <label>Категория</label>
-                            <select required>
+                            <select name="category" required>
                                 <option value="">Выберите категорию</option>
                                 <option value="A">Категория A — Мотоцикл</option>
                                 <option value="B">Категория B — Легковой</option>
@@ -1457,6 +1500,7 @@
                                 <option value="E">Категория E — Прицеп</option>
                             </select>
                         </div>
+                        <input type="hidden" name="discount" id="selectedDiscount" value="">
                         <button type="submit" class="form-submit">Отправить заявку</button>
                     </form>
                 </div>
@@ -1484,10 +1528,35 @@
     </div>
 
     <script>
+        // Update hidden discount field when a discount is selected
+        document.querySelectorAll('.discount-radio').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                document.getElementById('selectedDiscount').value = this.value;
+            });
+        });
+
         document.getElementById('contactForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            alert('Спасибо за заявку! Мы свяжемся с вами в ближайшее время.');
+            var formData = new FormData(this);
+            var name = formData.get('name');
+            var phone = formData.get('phone');
+            var category = formData.get('category');
+            var discount = formData.get('discount');
+
+            var message = 'Спасибо за заявку, ' + name + '! ';
+            message += 'Мы позвоним вам по номеру ' + phone + ' для записи на категорию ' + category + '.';
+            if (discount) {
+                var discountNames = {
+                    'student': 'Скидка для студентов',
+                    'birthday': 'Скидка на День Рождения',
+                    'friend': 'Приведи друга'
+                };
+                message += ' Вы выбрали: ' + discountNames[discount] + '.';
+            }
+            message += ' Мы свяжемся с вами в ближайшее время.';
+            alert(message);
             this.reset();
+            document.getElementById('selectedDiscount').value = '';
         });
     </script>
 
