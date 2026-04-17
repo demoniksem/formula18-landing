@@ -1524,24 +1524,23 @@
         // Handle discount selection with toggle behavior
         document.querySelectorAll('.discount-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
-                // Prevent toggle if clicking on a link inside the card
                 if (e.target.tagName === 'A') return;
-
                 var radio = this.querySelector('.discount-radio');
                 var hiddenField = document.getElementById('selectedDiscount');
+                var isSelected = radio.checked;
 
-                if (radio.checked) {
-                    // If already selected, deselect on second click
+
+                if (isSelected) {
+                    // Already selected - remove selection (browser already toggled radio to unchecked)
                     radio.checked = false;
                     hiddenField.value = '';
                     card.classList.remove('selected');
                 } else {
-                    // Deselect all others first
+                    // Not selected - deselect all others, select this one
                     document.querySelectorAll('.discount-card').forEach(function(c) {
                         c.classList.remove('selected');
                         c.querySelector('.discount-radio').checked = false;
                     });
-                    // Select this discount
                     radio.checked = true;
                     hiddenField.value = radio.value;
                     card.classList.add('selected');
