@@ -1548,30 +1548,58 @@
             });
         });
 
+        // CRM endpoint — override from the page (or deploy config) by setting
+        // window.FORMULA_API_URL before this script runs.
+        var FORMULA_API_URL = window.FORMULA_API_URL || 'https://crm.formula18.ru/api/v1';
+
         document.getElementById('contactForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            var formData = new FormData(this);
-            var name = formData.get('name');
-            var phone = formData.get('phone');
-            var category = formData.get('category');
-            var discount = formData.get('discount');
+            var form = this;
+            var submitBtn = form.querySelector('.form-submit');
+            var formData = new FormData(form);
+            var payload = {
+                name: formData.get('name'),
+                phone: formData.get('phone'),
+                category: formData.get('category'),
+                discount: formData.get('discount') || null,
+                source: 'landing'
+            };
 
-            var message = 'Спасибо за заявку, ' + name + '! ';
-            message += 'Мы позвоним вам по номеру ' + phone + ' для записи на категорию ' + category + '.';
-            if (discount) {
+            submitBtn.disabled = true;
+            var originalLabel = submitBtn.textContent;
+            submitBtn.textContent = 'Отправляем…';
+
+            fetch(FORMULA_API_URL + '/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function(res) {
+                return res.json().then(function(body) { return { ok: res.ok, body: body }; });
+            }).then(function(result) {
+                if (!result.ok) {
+                    throw new Error(result.body && result.body.message ? result.body.message : 'Не удалось отправить заявку');
+                }
                 var discountNames = {
                     'student': 'Скидка для студентов',
                     'birthday': 'Скидка на День Рождения',
                     'friend': 'Приведи друга'
                 };
-                message += ' Вы выбрали: ' + discountNames[discount] + '.';
-            }
-            message += ' Мы свяжемся с вами в ближайшее время.';
-            alert(message);
-            this.reset();
-            document.getElementById('selectedDiscount').value = '';
-            document.querySelectorAll('.discount-card').forEach(function(c) {
-                c.classList.remove('selected');
+                var msg = 'Спасибо за заявку, ' + payload.name + '! ';
+                msg += 'Мы позвоним по номеру ' + payload.phone + ' для записи на категорию ' + payload.category + '.';
+                if (payload.discount) {
+                    msg += ' Вы выбрали: ' + discountNames[payload.discount] + '.';
+                }
+                alert(msg);
+                form.reset();
+                document.getElementById('selectedDiscount').value = '';
+                document.querySelectorAll('.discount-card').forEach(function(c) {
+                    c.classList.remove('selected');
+                });
+            }).catch(function(err) {
+                alert('Не удалось отправить заявку: ' + (err && err.message ? err.message : 'проверьте соединение и попробуйте ещё раз') + '.\nМожете позвонить напрямую — номер указан выше.');
+            }).finally(function() {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalLabel;
             });
         });
     </script>
